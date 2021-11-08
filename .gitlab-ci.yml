@@ -81,32 +81,6 @@ coverage:
       - cover
     expire_in: 1 hour
 
-code_coverage_report:
-  stage: report
-  services:
-    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202107272042
-      alias: rabbitmq
-  before_script:
-    - export CC=/usr/bin/clang
-    - export GOPATH="$(pwd)/go"
-    - mkdir -p "$(pwd)/go"
-    - go env -w GOPATH="$(pwd)/go"
-    - mkdir -p $GOPATH/src/github.com/a-castellano
-    - ln -s ${CI_PROJECT_DIR} $GOPATH/src/github.com/a-castellano/reolink-manager
-    - cd $GOPATH/src/github.com/a-castellano/reolink-manager
-  script:
-    - make coverhtml
-  only:
-  - master
-  dependencies:
-  - coverage
-  artifacts:
-    name: "coverage-$CI_PIPELINE_ID"
-    paths:
-      - coverage.html
-      - cover
-    expire_in: 1 hour
-
 scan:
   stage: scan
   image: daedalusproject/base_sonar_scanner
