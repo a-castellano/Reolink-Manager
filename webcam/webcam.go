@@ -37,45 +37,81 @@ type WebcamResponse struct {
 	Value        WebcamResponseValue `json:"value"`
 }
 
+// getToken Return webcam current login token
 func (w Webcam) getToken() string {
 	return w.token
 }
 
-func (w *Webcam) Connect(client http.Client) error {
-
+// getToken Return webcam current login token
+func (w Webcam) makeRequest(client http.Client, url string, dataString string) (WebcamResponse, error) {
 	var webcamResponses []WebcamResponse
-
-	dataString := fmt.Sprintf("{'cmd':'Login','action':0,'param':{'User':{'userName': '%s','password': '%s'}}}", w.User, w.Password)
-	url := fmt.Sprintf("http://%s/cgi-bin/api.cgi?cmd=Login&token=null", w.IP)
 
 	data := []byte(dataString)
 
 	req, reqErr := http.NewRequest("POST", url, bytes.NewBuffer(data))
 	if reqErr != nil {
-		return reqErr
+		return WebcamResponse{}, reqErr
 	}
 	req.Header.Set("User-Agent", "github.com/a-castellano/Reolink-Manager")
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, postErr := client.Do(req)
 	if postErr != nil {
-		return postErr
+		return WebcamResponse{}, postErr
 	}
 	defer resp.Body.Close()
 
 	body, readBodyErr := ioutil.ReadAll(resp.Body)
 	if readBodyErr != nil {
-		return readBodyErr
+		return WebcamResponse{}, readBodyErr
 	}
 	json.Unmarshal([]byte(body), &webcamResponses)
 
 	webcamResponse := webcamResponses[0]
 
+	return webcamResponse, nil
+}
+
+// Connect tries to login into webcam interface
+func (w *Webcam) Connect(client http.Client) error {
+
+	dataString := fmt.Sprintf("[{\"cmd\":\"Login\",\"action\":0,\"param\":{\"User\":{\"userName\":\"%s\",\"password\":\"%s\"}}}]", w.User, w.Password)
+	url := fmt.Sprintf("http://%s/cgi-bin/api.cgi?cmd=Login&token=null", w.IP)
+
+	webcamResponse, reponseErr := w.makeRequest(client, url, dataString)
+
+	if reponseErr != nil {
+		return reponseErr
+	}
+
 	if webcamResponse.Code != 0 {
 		return errors.New("Login failed.")
 	} else {
-		fmt.Println(webcamResponse.Value.Token.Token)
 		w.token = webcamResponse.Value.Token.Token
+	}
+
+	return nil
+}
+
+// Reboot webcam
+func (w Webcam) Reboot(client http.Client) error {
+
+	if w.getToken() == "" {
+		return errors.New("Connect must be performed before rebooting the webcam.")
+	}
+
+	dataString := fmt.Sprintf("[{\"cmd\":\"Reboot\",\"action\":0,\"param\":{}}]")
+	url := fmt.Sprintf("http://%s/cgi-bin/api.cgi?cmd=Reboot&token=%s", w.IP, w.token)
+
+	webcamResponse, reponseErr := w.makeRequest(client, url, dataString)
+
+	if reponseErr != nil {
+		return reponseErr
+	}
+
+	if webcamResponse.Code != 0 {
+		errorString := fmt.Sprintf("Error rebooting webcam, %s.", webcamResponse.ErrorReponse.Detail)
+		return errors.New(errorString)
 	}
 
 	return nil
