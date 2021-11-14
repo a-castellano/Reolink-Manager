@@ -8,4 +8,34 @@ Library that manages Reolink Web Cam devices
 
 ## Features
 
-* No one for the time being
+* Reboot device
+
+## Examples
+
+### Reboot webcam
+    package main
+    
+    import (
+    	"net/http"
+    	"time"
+    
+    	reolink "github.com/a-castellano/reolink-manager/webcam"
+    )
+    
+    func main() {
+    
+    	client := http.Client{
+    		Timeout: time.Second * 5, // Maximum of 5 secs
+    	}
+    
+    	webcam := reolink.Webcam{IP: "webcamIP", User: "admin", Password: "password"}
+    	connectErr := webcam.Connect(client)
+    	if connectErr != nil {
+    		panic(connectErr)
+    	} else {
+    		rebootErr := webcam.Reboot(client)
+    		if rebootErr != nil {
+    			panic(rebootErr)
+    		}
+    	}
+    }

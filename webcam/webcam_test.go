@@ -66,3 +66,82 @@ func TestConnectSucceded(t *testing.T) {
 		t.Errorf("Token should be 'fef39ed8155f884', not '%s'.", token)
 	}
 }
+
+func TestRebootWithoutToken(t *testing.T) {
+
+	var errMessage = "Connect must be performed before rebooting the webcam."
+	client := http.Client{Transport: &RoundTripperMock{Response: &http.Response{Body: ioutil.NopCloser(bytes.NewBufferString(`
+[
+   {
+      "cmd" : "Reboot",
+      "code" : 1,
+      "error" : {
+         "detail" : "please login first",
+         "rspCode" : -6
+      }
+   }
+]
+	`))}}}
+
+	webcam := Webcam{IP: "10.10.0.1", User: "user", Password: "pass"}
+	err := webcam.Reboot(client)
+
+	if err == nil {
+		t.Errorf("Connect should fail.")
+	}
+
+	if err.Error() != errMessage {
+		t.Errorf("Reboot error should be '%s', not '%s'.", errMessage, err.Error())
+	}
+}
+
+func TestRebootFailedToken(t *testing.T) {
+
+	var errMessage = "Error rebooting webcam, please login first."
+	client := http.Client{Transport: &RoundTripperMock{Response: &http.Response{Body: ioutil.NopCloser(bytes.NewBufferString(`
+[
+   {
+      "cmd" : "Reboot",
+      "code" : 1,
+      "error" : {
+         "detail" : "please login first",
+         "rspCode" : -6
+      }
+   }
+]
+	`))}}}
+
+	webcam := Webcam{IP: "10.10.0.1", User: "user", Password: "pass", token: "testtoken"}
+	err := webcam.Reboot(client)
+
+	if err == nil {
+		t.Errorf("Connect should fail.")
+	} else {
+
+		if err.Error() != errMessage {
+			t.Errorf("Reboot error should be '%s', not '%s'.", errMessage, err.Error())
+		}
+	}
+}
+
+func TestReboot(t *testing.T) {
+
+	client := http.Client{Transport: &RoundTripperMock{Response: &http.Response{Body: ioutil.NopCloser(bytes.NewBufferString(`
+[
+   {
+      "cmd" : "Reboot",
+      "code" : 0,
+      "value" : {
+         "rspCode" : 200
+      }
+   }
+]
+	`))}}}
+
+	webcam := Webcam{IP: "10.10.0.1", User: "user", Password: "pass", token: "testtoken"}
+	err := webcam.Reboot(client)
+
+	if err != nil {
+		t.Errorf("Connect shouldn't fail.")
+	}
+}
