@@ -35,9 +35,6 @@ lint_code:
 
 coverage:
   stage: coverage
-  services:
-    - name: registry.windmaker.net:5005/a-castellano/limani/base_rabbitmq_server:202107272042
-      alias: rabbitmq
   before_script:
     - export CC=/usr/bin/clang
     - export GOPATH="$(pwd)/go"
