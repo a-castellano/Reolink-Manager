@@ -36,3 +36,33 @@ func TestConnectFailed(t *testing.T) {
 	}
 
 }
+
+func TestConnectSucceded(t *testing.T) {
+
+	client := http.Client{Transport: &RoundTripperMock{Response: &http.Response{Body: ioutil.NopCloser(bytes.NewBufferString(`
+[
+   {
+      "cmd" : "Login",
+      "code" : 0,
+      "value" : {
+         "Token" : {
+            "leaseTime" : 3600,
+            "name" : "fef39ed8155f884"
+         }
+      }
+   }
+]
+	`))}}}
+
+	webcam := Webcam{IP: "10.10.0.1", User: "user", Password: "pass"}
+	err := webcam.Connect(client)
+
+	if err != nil {
+		t.Errorf("Connect shouldn't fail.")
+	}
+
+	token := webcam.getToken()
+	if token != "fef39ed8155f884" {
+		t.Errorf("Token should be 'fef39ed8155f884', not '%s'.", token)
+	}
+}

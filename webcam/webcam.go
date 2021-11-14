@@ -22,8 +22,8 @@ type WebcamErrorResponse struct {
 }
 
 type WebcamResponseToken struct {
-	Detail string `json:"detail"`
-	Code   int    `json:"rspCode"`
+	LeaseTime int    `json:"leaseTime"`
+	Token     string `json:"name"`
 }
 
 type WebcamResponseValue struct {
@@ -37,7 +37,11 @@ type WebcamResponse struct {
 	Value        WebcamResponseValue `json:"value"`
 }
 
-func (w Webcam) Connect(client http.Client) error {
+func (w Webcam) getToken() string {
+	return w.token
+}
+
+func (w *Webcam) Connect(client http.Client) error {
 
 	var webcamResponses []WebcamResponse
 
@@ -69,6 +73,9 @@ func (w Webcam) Connect(client http.Client) error {
 
 	if webcamResponse.Code != 0 {
 		return errors.New("Login failed.")
+	} else {
+		fmt.Println(webcamResponse.Value.Token.Token)
+		w.token = webcamResponse.Value.Token.Token
 	}
 
 	return nil
