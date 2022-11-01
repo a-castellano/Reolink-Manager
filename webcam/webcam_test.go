@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
 )
 
 func TestConnectFailed(t *testing.T) {
@@ -143,5 +144,29 @@ func TestReboot(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Connect shouldn't fail.")
+	}
+}
+
+func TestNonExpiredToken(t *testing.T) {
+
+	now := time.Now()
+	nowSeconds := int(now.Unix()) + 500
+	webcam := Webcam{IP: "10.10.0.1", User: "user", Password: "pass", token: "testtoken", leaseTime: nowSeconds}
+	expire := webcam.expiredToken()
+
+	if expire != false {
+		t.Errorf("Token has not expired yet, expire should be false but it is true.")
+	}
+}
+
+func TestExpiredToken(t *testing.T) {
+
+	now := time.Now()
+	nowSeconds := int(now.Unix()) - 500
+	webcam := Webcam{IP: "10.10.0.1", User: "user", Password: "pass", token: "testtoken", leaseTime: nowSeconds}
+	expire := webcam.expiredToken()
+
+	if expire != true {
+		t.Errorf("Token has expired, expire should be true, not false.")
 	}
 }

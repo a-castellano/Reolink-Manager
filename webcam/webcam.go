@@ -90,7 +90,7 @@ func (w *Webcam) Connect(client http.Client) error {
 		return errors.New("Login failed.")
 	} else {
 		w.token = webcamResponse.Value.Token.Token
-		now := time.Now() // current local time
+		now := time.Now()
 		w.leaseTime = int(now.Unix()) + webcamResponse.Value.Token.LeaseTime
 	}
 
@@ -101,7 +101,7 @@ func (w *Webcam) Connect(client http.Client) error {
 func (w *Webcam) expiredToken() bool {
 
 	var expired bool = false
-	now := time.Now() // current local time
+	now := time.Now()
 	nowSeconds := int(now.Unix())
 	if w.leaseTime-nowSeconds < 10 {
 		expired = true
