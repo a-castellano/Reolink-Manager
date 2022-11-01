@@ -30,6 +30,10 @@ type WebcamResponseToken struct {
 
 type WebcamResponseValue struct {
 	Token WebcamResponseToken `json:"Token"`
+	State int                 `json:"state"`
+}
+type WebcamMotionResponseValue struct {
+	State int `json:"state"`
 }
 
 type WebcamResponse struct {
@@ -39,13 +43,20 @@ type WebcamResponse struct {
 	Value        WebcamResponseValue `json:"value"`
 }
 
+type WebcamMotionResponse struct {
+	CMD          string                    `json:"cmd"`
+	Code         int                       `json:"code"`
+	ErrorReponse WebcamErrorResponse       `json:"error"`
+	Value        WebcamMotionResponseValue `json:"value"`
+}
+
 // getToken Return webcam current login token
 func (w Webcam) getToken() string {
 	return w.token
 }
 
 // getToken Return webcam current login token
-func (w Webcam) makeRequest(client http.Client, url string, dataString string) (WebcamResponse, error) {
+func (w Webcam) makeLoginRequest(client http.Client, url string, dataString string) (WebcamResponse, error) {
 	var webcamResponses []WebcamResponse
 
 	data := []byte(dataString)
@@ -80,7 +91,7 @@ func (w *Webcam) Connect(client http.Client) error {
 	dataString := fmt.Sprintf("[{\"cmd\":\"Login\",\"action\":0,\"param\":{\"User\":{\"userName\":\"%s\",\"password\":\"%s\"}}}]", w.User, w.Password)
 	url := fmt.Sprintf("http://%s/cgi-bin/api.cgi?cmd=Login&token=null", w.IP)
 
-	webcamResponse, reponseErr := w.makeRequest(client, url, dataString)
+	webcamResponse, reponseErr := w.makeLoginRequest(client, url, dataString)
 
 	if reponseErr != nil {
 		return reponseErr
@@ -109,6 +120,27 @@ func (w *Webcam) expiredToken() bool {
 	return expired
 }
 
+// Retrieves motion sensor value
+func (w *Webcam) MotionDetected(client http.Client) (bool, error) {
+
+	var motionDetected bool = false
+	if w.expiredToken() {
+		w.Connect(client)
+	}
+	url := fmt.Sprintf("http://%s/cgi-bin/api.cgi?cmd=GetMdState&token=%s", w.IP, w.token)
+	webcamResponse, reponseErr := w.makeLoginRequest(client, url, "")
+	if reponseErr != nil {
+		return motionDetected, reponseErr
+	}
+	if webcamResponse.Code != 0 {
+		return motionDetected, errors.New("Motion detection Failed.")
+	}
+	if webcamResponse.Value.State != 0 {
+		motionDetected = true
+	}
+	return motionDetected, nil
+}
+
 // Reboot webcam
 func (w Webcam) Reboot(client http.Client) error {
 
@@ -119,7 +151,7 @@ func (w Webcam) Reboot(client http.Client) error {
 	dataString := fmt.Sprintf("[{\"cmd\":\"Reboot\",\"action\":0,\"param\":{}}]")
 	url := fmt.Sprintf("http://%s/cgi-bin/api.cgi?cmd=Reboot&token=%s", w.IP, w.token)
 
-	webcamResponse, reponseErr := w.makeRequest(client, url, dataString)
+	webcamResponse, reponseErr := w.makeLoginRequest(client, url, dataString)
 
 	if reponseErr != nil {
 		return reponseErr
