@@ -98,7 +98,7 @@ func (w *Webcam) Connect(client http.Client) error {
 }
 
 // Checks if lease time has expired
-func (w *Webcam) ExpiredToken() bool {
+func (w *Webcam) expiredToken() bool {
 
 	var expired bool = false
 	now := time.Now() // current local time
