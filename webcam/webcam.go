@@ -7,13 +7,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 type Webcam struct {
-	IP       string
-	User     string
-	Password string
-	token    string
+	IP        string
+	User      string
+	Password  string
+	token     string
+	leaseTime int
 }
 
 type WebcamErrorResponse struct {
@@ -88,9 +90,23 @@ func (w *Webcam) Connect(client http.Client) error {
 		return errors.New("Login failed.")
 	} else {
 		w.token = webcamResponse.Value.Token.Token
+		now := time.Now() // current local time
+		w.leaseTime = int(now.Unix()) + webcamResponse.Value.Token.LeaseTime
 	}
 
 	return nil
+}
+
+// Checks if lease time has expired
+func (w *Webcam) ExpiredToken() bool {
+
+	var expired bool = false
+	now := time.Now() // current local time
+	nowSeconds := int(now.Unix())
+	if w.leaseTime-nowSeconds < 10 {
+		expired = true
+	}
+	return expired
 }
 
 // Reboot webcam
