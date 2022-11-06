@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
 )
 
 func TestConnectFailed(t *testing.T) {
@@ -144,4 +145,163 @@ func TestReboot(t *testing.T) {
 	if err != nil {
 		t.Errorf("Connect shouldn't fail.")
 	}
+}
+
+func TestNonExpiredToken(t *testing.T) {
+
+	now := time.Now()
+	nowSeconds := int(now.Unix()) + 500
+	webcam := Webcam{IP: "10.10.0.1", User: "user", Password: "pass", token: "testtoken", leaseTime: nowSeconds}
+	expire := webcam.expiredToken()
+
+	if expire != false {
+		t.Errorf("Token has not expired yet, expire should be false but it is true.")
+	}
+}
+
+func TestExpiredToken(t *testing.T) {
+
+	now := time.Now()
+	nowSeconds := int(now.Unix()) - 500
+	webcam := Webcam{IP: "10.10.0.1", User: "user", Password: "pass", token: "testtoken", leaseTime: nowSeconds}
+	expire := webcam.expiredToken()
+
+	if expire != true {
+		t.Errorf("Token has expired, expire should be true, not false.")
+	}
+}
+
+func TestMotionSensorDetection(t *testing.T) {
+
+	client := http.Client{Transport: &RoundTripperMock{Response: &http.Response{Body: ioutil.NopCloser(bytes.NewBufferString(`
+[
+   {
+      "cmd" : "GetMdState",
+      "code" : 0,
+      "value" : {
+         "state" : 1
+      }
+   }
+]
+	`))}}}
+	now := time.Now()
+	nowSeconds := int(now.Unix()) + 500
+	webcam := Webcam{IP: "10.10.0.1", User: "user", Password: "pass", token: "testtoken", leaseTime: nowSeconds}
+	motion, err := webcam.MotionDetected(client)
+
+	if err != nil {
+		t.Errorf("MotionDetected shouldn't fail.")
+	}
+
+	if motion != true {
+		t.Errorf("motion should be true, not false.")
+	}
+}
+
+func TestMotionSensorNoDetection(t *testing.T) {
+
+	client := http.Client{Transport: &RoundTripperMock{Response: &http.Response{Body: ioutil.NopCloser(bytes.NewBufferString(`
+[
+   {
+      "cmd" : "GetMdState",
+      "code" : 0,
+      "value" : {
+         "state" : 0
+      }
+   }
+]
+	`))}}}
+	now := time.Now()
+	nowSeconds := int(now.Unix()) + 500
+	webcam := Webcam{IP: "10.10.0.1", User: "user", Password: "pass", token: "testtoken", leaseTime: nowSeconds}
+	motion, err := webcam.MotionDetected(client)
+
+	if err != nil {
+		t.Errorf("MotionDetected shouldn't fail.")
+	}
+
+	if motion != false {
+		t.Errorf("motion should be false, not true.")
+	}
+}
+
+func TestMotionSensorErrorCode(t *testing.T) {
+
+	client := http.Client{Transport: &RoundTripperMock{Response: &http.Response{Body: ioutil.NopCloser(bytes.NewBufferString(`
+[
+   {
+      "cmd" : "GetMdState",
+      "code" : 1,
+      "value" : {
+         "state" : 0
+      }
+   }
+]
+	`))}}}
+	now := time.Now()
+	nowSeconds := int(now.Unix()) + 500
+	webcam := Webcam{IP: "10.10.0.1", User: "user", Password: "pass", token: "testtoken", leaseTime: nowSeconds}
+	_, err := webcam.MotionDetected(client)
+
+	if err == nil {
+		t.Errorf("MotionDetected should fail.")
+	}
+
+}
+
+func TestMotionSenssorReLogin(t *testing.T) {
+
+	client := http.Client{Transport: &RoundTripperMockTwoRequests{Response: &http.Response{Body: ioutil.NopCloser(bytes.NewBufferString(`
+[
+   {
+      "cmd" : "Login",
+      "code" : 0,
+      "value" : {
+         "Token" : {
+            "leaseTime" : 3600,
+            "name" : "fef39ed8155f884"
+         }
+      }
+   }
+]
+	`))},
+		SecondResponse: &http.Response{Body: ioutil.NopCloser(bytes.NewBufferString(`
+[
+   {
+      "cmd" : "GetMdState",
+      "code" : 0,
+      "value" : {
+         "state" : 0
+      }
+   }
+]
+	`))},
+	}}
+	now := time.Now()
+	nowSeconds := int(now.Unix()) - 500
+	webcam := Webcam{IP: "10.10.0.1", User: "user", Password: "pass", token: "testtoken", leaseTime: nowSeconds}
+	_, err := webcam.MotionDetected(client)
+
+	if err != nil {
+		t.Errorf("MotionDetected shouldn't fail.")
+	}
+
+}
+
+func TestConnectFailedBadJson(t *testing.T) {
+
+	client := http.Client{Transport: &RoundTripperMock{Response: &http.Response{Body: ioutil.NopCloser(bytes.NewBufferString(`
+	[
+   {s
+   }
+]
+	`))}}}
+
+	webcam := Webcam{IP: "10.10.0.1", User: "user", Password: "pass"}
+	err := webcam.Connect(client)
+
+	if err == nil {
+		t.Errorf("Connect should fail.")
+	}
+
 }
