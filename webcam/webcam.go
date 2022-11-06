@@ -78,7 +78,10 @@ func (w Webcam) makeLoginRequest(client http.Client, url string, dataString stri
 	if readBodyErr != nil {
 		return WebcamResponse{}, readBodyErr
 	}
-	json.Unmarshal([]byte(body), &webcamResponses)
+	unmarshalError := json.Unmarshal([]byte(body), &webcamResponses)
+	if unmarshalError != nil {
+		return WebcamResponse{}, unmarshalError
+	}
 
 	webcamResponse := webcamResponses[0]
 
@@ -93,6 +96,7 @@ func (w *Webcam) Connect(client http.Client) error {
 
 	webcamResponse, reponseErr := w.makeLoginRequest(client, url, dataString)
 
+	//	fmt.Println(reponseErr)
 	if reponseErr != nil {
 		return reponseErr
 	}

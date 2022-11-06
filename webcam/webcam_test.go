@@ -224,3 +224,84 @@ func TestMotionSensorNoDetection(t *testing.T) {
 		t.Errorf("motion should be false, not true.")
 	}
 }
+
+func TestMotionSensorErrorCode(t *testing.T) {
+
+	client := http.Client{Transport: &RoundTripperMock{Response: &http.Response{Body: ioutil.NopCloser(bytes.NewBufferString(`
+[
+   {
+      "cmd" : "GetMdState",
+      "code" : 1,
+      "value" : {
+         "state" : 0
+      }
+   }
+]
+	`))}}}
+	now := time.Now()
+	nowSeconds := int(now.Unix()) + 500
+	webcam := Webcam{IP: "10.10.0.1", User: "user", Password: "pass", token: "testtoken", leaseTime: nowSeconds}
+	_, err := webcam.MotionDetected(client)
+
+	if err == nil {
+		t.Errorf("MotionDetected should fail.")
+	}
+
+}
+
+func TestMotionSenssorReLogin(t *testing.T) {
+
+	client := http.Client{Transport: &RoundTripperMockTwoRequests{Response: &http.Response{Body: ioutil.NopCloser(bytes.NewBufferString(`
+[
+   {
+      "cmd" : "Login",
+      "code" : 0,
+      "value" : {
+         "Token" : {
+            "leaseTime" : 3600,
+            "name" : "fef39ed8155f884"
+         }
+      }
+   }
+]
+	`))},
+		SecondResponse: &http.Response{Body: ioutil.NopCloser(bytes.NewBufferString(`
+[
+   {
+      "cmd" : "GetMdState",
+      "code" : 0,
+      "value" : {
+         "state" : 0
+      }
+   }
+]
+	`))},
+	}}
+	now := time.Now()
+	nowSeconds := int(now.Unix()) - 500
+	webcam := Webcam{IP: "10.10.0.1", User: "user", Password: "pass", token: "testtoken", leaseTime: nowSeconds}
+	_, err := webcam.MotionDetected(client)
+
+	if err != nil {
+		t.Errorf("MotionDetected shouldn't fail.")
+	}
+
+}
+
+func TestConnectFailedBadJson(t *testing.T) {
+
+	client := http.Client{Transport: &RoundTripperMock{Response: &http.Response{Body: ioutil.NopCloser(bytes.NewBufferString(`
+	[
+   {s
+   }
+]
+	`))}}}
+
+	webcam := Webcam{IP: "10.10.0.1", User: "user", Password: "pass"}
+	err := webcam.Connect(client)
+
+	if err == nil {
+		t.Errorf("Connect should fail.")
+	}
+
+}
