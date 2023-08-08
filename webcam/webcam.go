@@ -108,6 +108,7 @@ func (w *Webcam) Connect(client http.Client) error {
 		w.token = webcamResponse.Value.Token.Token
 		now := time.Now()
 		w.leaseTime = int(now.Unix()) + webcamResponse.Value.Token.LeaseTime
+		log.Println("Webcam ", w.IP, " leaseTime ", w.leaseTime)
 	}
 
 	return nil
@@ -122,7 +123,7 @@ func (w *Webcam) expiredToken() bool {
 	log.Println("Checking webcam ", w.IP, " lease time ", w.leaseTime, " now -> ", nowSeconds)
 	if w.leaseTime-nowSeconds < 10 {
 		expired = true
-		log.Println("Webcam ", w.IP, " token is expited.")
+		log.Println("Webcam ", w.IP, " token is expired.")
 	}
 	return expired
 }

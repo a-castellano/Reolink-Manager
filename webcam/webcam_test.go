@@ -66,6 +66,12 @@ func TestConnectSucceded(t *testing.T) {
 	if token != "fef39ed8155f884" {
 		t.Errorf("Token should be 'fef39ed8155f884', not '%s'.", token)
 	}
+
+	expiredToken := webcam.expiredToken()
+	if expiredToken {
+		t.Errorf("Token shouldn't be expired.")
+	}
+
 }
 
 func TestRebootWithoutToken(t *testing.T) {
