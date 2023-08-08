@@ -1,3 +1,3 @@
 module github.com/a-castellano/reolink-manager
 
-go 1.19
+go 1.20
