@@ -72,6 +72,11 @@ func TestConnectSucceded(t *testing.T) {
 		t.Errorf("Token shouldn't be expired.")
 	}
 
+	expiredTokenReCheck := webcam.expiredToken()
+	if expiredTokenReCheck {
+		t.Errorf("Token shouldn't be expired.")
+	}
+
 }
 
 func TestRebootWithoutToken(t *testing.T) {

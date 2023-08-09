@@ -107,8 +107,9 @@ func (w *Webcam) Connect(client http.Client) error {
 	} else {
 		w.token = webcamResponse.Value.Token.Token
 		now := time.Now()
+		log.Println("Webcam ", w.IP, " leaseTime ", webcamResponse.Value.Token.LeaseTime)
 		w.leaseTime = int(now.Unix()) + webcamResponse.Value.Token.LeaseTime
-		log.Println("Webcam ", w.IP, " leaseTime ", w.leaseTime)
+		log.Println("Webcam ", w.IP, " leaseTime exires at timestamp ", w.leaseTime)
 	}
 
 	return nil
