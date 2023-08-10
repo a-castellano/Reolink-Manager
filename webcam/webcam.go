@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 )
@@ -107,9 +106,7 @@ func (w *Webcam) Connect(client http.Client) error {
 	} else {
 		w.token = webcamResponse.Value.Token.Token
 		now := time.Now()
-		log.Println("Webcam ", w.IP, " leaseTime ", webcamResponse.Value.Token.LeaseTime)
 		w.leaseTime = int(now.Unix()) + webcamResponse.Value.Token.LeaseTime
-		log.Println("Webcam ", w.IP, " leaseTime exires at timestamp ", w.leaseTime)
 	}
 
 	return nil
@@ -117,14 +114,11 @@ func (w *Webcam) Connect(client http.Client) error {
 
 // Checks if lease time has expired
 func (w *Webcam) expiredToken() bool {
-	log.Println("Checking webcam ", w.IP, " token is expited.")
 	var expired bool = false
 	now := time.Now()
 	nowSeconds := int(now.Unix())
-	log.Println("Checking webcam ", w.IP, " lease time ", w.leaseTime, " now -> ", nowSeconds)
 	if w.leaseTime-nowSeconds < 10 {
 		expired = true
-		log.Println("Webcam ", w.IP, " token is expired.")
 	}
 	return expired
 }
